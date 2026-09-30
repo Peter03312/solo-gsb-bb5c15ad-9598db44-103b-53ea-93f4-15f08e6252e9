@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: redact
+      POSTGRES_PASSWORD: redact
+      POSTGRES_DB: redact
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U redact -d redact"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg2://redact:redact@db:5432/redact
+      # 演示用密钥，生产环境务必修改
+      SERVICE_KEY: dev-service-key-change-me
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

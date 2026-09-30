@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: redact
+      POSTGRES_PASSWORD: redact
+      POSTGRES_DB: redaction
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U redact -d redaction"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # 生产部署请通过 .env / 环境变量覆盖此密钥
+      SERVICE_KEY: ${SERVICE_KEY:-change-me-please-use-a-long-random-secret}
+      DATABASE_URL: postgresql://redact:redact@db:5432/redaction
+      MAX_CONTENT_CODEPOINTS: "1000000"
+      MAX_RANGES: "10000"
+      MAX_TOKEN_TTL_SECONDS: "31536000"
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
